@@ -1,3 +1,34 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=it">Itapano</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=Zero-Calendar&project=zero-calendar&lang=id">Bahasa Indonesia</a>
+      </div>
+    </div>
+  </details>
+</div>
+
 # Zero Calendar
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FZero-Calendar%2Fzero-calendar)
