@@ -1,3 +1,6 @@
+// System prompts for Zero Calendar AI assistant
+// Last updated: 2026-01-27
+
 export const calendarAssistantPrompt = (currentDate = new Date()) => `
 <current_datetime>${currentDate.toISOString()}</current_datetime>
 <current_day>${currentDate.toLocaleDateString("en-US", { weekday: "long" })}</current_day>
