@@ -16,11 +16,24 @@ type ChatHistoryMessage = {
   content: string;
 };
 
-type ToolExecutionContext = {
-  experimental_context?: {
-    userId?: string;
-  };
+type ToolExecutionOptions = {
+  experimental_context?: unknown;
 };
+
+function getToolUserId(options: ToolExecutionOptions) {
+  const ctx = options.experimental_context;
+
+  if (
+    ctx &&
+    typeof ctx === "object" &&
+    "userId" in ctx &&
+    typeof (ctx as { userId: unknown }).userId === "string"
+  ) {
+    return (ctx as { userId: string }).userId;
+  }
+
+  throw new Error("Missing authenticated user context for AI tool execution");
+}
 
 const chatRequestSchema = z.object({
   currentDate: z.string().optional(),
@@ -35,16 +48,6 @@ const chatRequestSchema = z.object({
     .optional(),
   timezone: z.string().trim().optional(),
 });
-
-function getToolUserId(context: ToolExecutionContext) {
-  const userId = context.experimental_context?.userId;
-
-  if (!userId) {
-    throw new Error("Missing authenticated user context for AI tool execution");
-  }
-
-  return userId;
-}
 
 function isDateOnly(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -139,9 +142,9 @@ function eventsOverlap(
 const tools = {
   getTodayEvents: tool({
     description: "Retrieve the user's events for today.",
-    parameters: z.object({}),
-    execute: async (_, context) => {
-      const userId = getToolUserId(context);
+    inputSchema: z.object({}),
+    execute: async (_, options) => {
+      const userId = getToolUserId(options);
       const events = await calendarTools.getTodayEvents(userId);
 
       return {
@@ -158,12 +161,12 @@ const tools = {
 
   getEvents: tool({
     description: "Retrieve events within a date range.",
-    parameters: z.object({
+    inputSchema: z.object({
       startDate: z.string().describe("ISO date or datetime for the range start."),
       endDate: z.string().describe("ISO date or datetime for the range end."),
     }),
-    execute: async ({ startDate, endDate }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ startDate, endDate }, options) => {
+      const userId = getToolUserId(options);
       const start = parseRangeStart(startDate);
       const end = parseRangeEnd(endDate);
 
@@ -188,7 +191,7 @@ const tools = {
 
   createEvent: tool({
     description: "Create a new calendar event.",
-    parameters: z.object({
+    inputSchema: z.object({
       title: z.string().describe("Event title."),
       startTime: z.string().describe("ISO datetime for when the event starts."),
       endTime: z.string().describe("ISO datetime for when the event ends."),
@@ -196,8 +199,8 @@ const tools = {
       location: z.string().optional().describe("Optional event location."),
       color: z.string().optional().describe("Optional event color/category hint."),
     }),
-    execute: async (params, context) => {
-      const userId = getToolUserId(context);
+    execute: async (params, options) => {
+      const userId = getToolUserId(options);
       const startTime = new Date(params.startTime);
       const endTime = new Date(params.endTime);
 
@@ -245,7 +248,7 @@ const tools = {
 
   updateEvent: tool({
     description: "Update an existing calendar event.",
-    parameters: z.object({
+    inputSchema: z.object({
       eventId: z.string().describe("ID of the event to update."),
       title: z.string().optional().describe("New event title."),
       startTime: z.string().optional().describe("New ISO start datetime."),
@@ -254,8 +257,8 @@ const tools = {
       location: z.string().optional().describe("New event location."),
       color: z.string().optional().describe("New event color."),
     }),
-    execute: async (params, context) => {
-      const userId = getToolUserId(context);
+    execute: async (params, options) => {
+      const userId = getToolUserId(options);
       const existingEvent = await calendarTools.getEvent(userId, params.eventId);
 
       if (!existingEvent) {
@@ -321,11 +324,11 @@ const tools = {
 
   deleteEvent: tool({
     description: "Delete a calendar event by ID.",
-    parameters: z.object({
+    inputSchema: z.object({
       eventId: z.string().describe("ID of the event to delete."),
     }),
-    execute: async ({ eventId }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ eventId }, options) => {
+      const userId = getToolUserId(options);
       const event = await calendarTools.getEvent(userId, eventId);
 
       if (!event) {
@@ -344,11 +347,11 @@ const tools = {
 
   findEvents: tool({
     description: "Search calendar events by title, description, or location.",
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe("Search query."),
     }),
-    execute: async ({ query }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ query }, options) => {
+      const userId = getToolUserId(options);
       const events = await calendarTools.findEvents(userId, query);
 
       return {
@@ -366,12 +369,12 @@ const tools = {
 
   analyzeSchedule: tool({
     description: "Analyze schedule patterns over a date range.",
-    parameters: z.object({
+    inputSchema: z.object({
       startDate: z.string().describe("ISO date or datetime for the analysis start."),
       endDate: z.string().describe("ISO date or datetime for the analysis end."),
     }),
-    execute: async ({ startDate, endDate }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ startDate, endDate }, options) => {
+      const userId = getToolUserId(options);
       const start = parseRangeStart(startDate);
       const end = parseRangeEnd(endDate);
 
@@ -395,7 +398,7 @@ const tools = {
 
   findAvailableTimeSlots: tool({
     description: "Find available time slots on a specific date.",
-    parameters: z.object({
+    inputSchema: z.object({
       date: z.string().describe("ISO date or datetime to search."),
       durationMinutes: z
         .number()
@@ -403,8 +406,8 @@ const tools = {
         .default(30)
         .describe("Minimum duration needed in minutes."),
     }),
-    execute: async ({ date, durationMinutes }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ date, durationMinutes }, options) => {
+      const userId = getToolUserId(options);
       const result = await calendarTools.findAvailableTimeSlots(
         userId,
         date,
@@ -426,12 +429,12 @@ const tools = {
 
   checkForConflicts: tool({
     description: "Check whether a proposed time slot conflicts with existing events.",
-    parameters: z.object({
+    inputSchema: z.object({
       startTime: z.string().describe("Proposed ISO start datetime."),
       endTime: z.string().describe("Proposed ISO end datetime."),
     }),
-    execute: async ({ startTime, endTime }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ startTime, endTime }, options) => {
+      const userId = getToolUserId(options);
       const hasConflict = await calendarTools.checkForConflicts(
         userId,
         startTime,
@@ -451,11 +454,11 @@ const tools = {
 
   suggestRescheduling: tool({
     description: "Suggest alternative slots for rescheduling an event.",
-    parameters: z.object({
+    inputSchema: z.object({
       eventId: z.string().describe("ID of the event to reschedule."),
     }),
-    execute: async ({ eventId }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ eventId }, options) => {
+      const userId = getToolUserId(options);
       const suggestions = await calendarTools.suggestRescheduling(userId, eventId);
 
       return {
@@ -470,12 +473,12 @@ const tools = {
 
   getCalendarAnalytics: tool({
     description: "Get detailed analytics about calendar usage over a date range.",
-    parameters: z.object({
+    inputSchema: z.object({
       startDate: z.string().describe("ISO date or datetime for the analysis start."),
       endDate: z.string().describe("ISO date or datetime for the analysis end."),
     }),
-    execute: async ({ startDate, endDate }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ startDate, endDate }, options) => {
+      const userId = getToolUserId(options);
       const start = parseRangeStart(startDate);
       const end = parseRangeEnd(endDate);
 
@@ -499,7 +502,7 @@ const tools = {
 
   findFreeTimeSlots: tool({
     description: "Find all free time slots across a date range.",
-    parameters: z.object({
+    inputSchema: z.object({
       startDate: z.string().describe("ISO date or datetime for the range start."),
       endDate: z.string().describe("ISO date or datetime for the range end."),
       minDurationMinutes: z
@@ -508,8 +511,8 @@ const tools = {
         .default(30)
         .describe("Minimum duration in minutes."),
     }),
-    execute: async ({ startDate, endDate, minDurationMinutes }, context) => {
-      const userId = getToolUserId(context);
+    execute: async ({ startDate, endDate, minDurationMinutes }, options) => {
+      const userId = getToolUserId(options);
       const start = parseRangeStart(startDate);
       const end = parseRangeEnd(endDate);
 
