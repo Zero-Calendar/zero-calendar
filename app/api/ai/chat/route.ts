@@ -68,6 +68,65 @@ function sanitizeMessages(messages: ChatHistoryMessage[]) {
     .slice(-20);
 }
 
+function getLatestUserMessage(messages: ChatHistoryMessage[]) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      return messages[index].content;
+    }
+  }
+
+  return "";
+}
+
+function isCreateEventIntent(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (
+    /(delete|remove|cancel|reschedule|move|edit|update)\b/.test(normalized)
+  ) {
+    return false;
+  }
+
+  return /(create|add|schedule|book|put\b.*calendar|make\b.*event)\b/.test(
+    normalized
+  );
+}
+
+function hasSuccessfulConflictCheck(
+  steps: Array<{
+    toolResults: Array<{ toolName: string; output: unknown }>;
+  }>
+) {
+  const latestConflictCheck = steps
+    .flatMap((step) => step.toolResults)
+    .reverse()
+    .find((result) => result.toolName === "checkForConflicts");
+
+  if (!latestConflictCheck) {
+    return false;
+  }
+
+  const output = latestConflictCheck.output;
+
+  return Boolean(
+    output &&
+      typeof output === "object" &&
+      "hasConflict" in output &&
+      output.hasConflict === false
+  );
+}
+
+function hasToolResult(
+  steps: Array<{
+    toolResults: Array<{ toolName: string }>;
+  }>,
+  toolName: string
+) {
+  return steps.some((step) =>
+    step.toolResults.some((result) => result.toolName === toolName)
+  );
+}
+
 function eventsOverlap(
   aStart: Date,
   aEnd: Date,
@@ -490,6 +549,8 @@ export async function POST(req: Request) {
           ? [{ role: "user", content: body.message }]
           : [])
     );
+    const latestUserMessage = getLatestUserMessage(history);
+    const createIntent = isCreateEventIntent(latestUserMessage);
 
     if (history.length === 0) {
       return Response.json(
@@ -505,6 +566,20 @@ export async function POST(req: Request) {
       messages: history,
       tools,
       toolChoice: "auto",
+      prepareStep: async ({ steps }) => {
+        if (
+          createIntent &&
+          hasSuccessfulConflictCheck(steps) &&
+          !hasToolResult(steps, "createEvent")
+        ) {
+          return {
+            activeTools: ["createEvent"],
+            toolChoice: { type: "tool", toolName: "createEvent" } as const,
+          };
+        }
+
+        return undefined;
+      },
       // AI SDK v6 defaults to stepCountIs(1), which ends after a single tool call
       // with no follow-up text. Allow multiple steps so the model can call tools
       // and then summarize results for the user.
