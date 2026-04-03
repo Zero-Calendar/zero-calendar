@@ -11,6 +11,7 @@ export interface Participant {
 
 interface ParticipantsInputProps {
   className?: string;
+  icon?: React.ReactNode;
   inputClassName?: string;
   onChange: (value: Participant[]) => void;
   placeholder?: string;
@@ -38,6 +39,7 @@ const STATUS_STYLES: Record<
 
 export function ParticipantsInput({
   className,
+  icon,
   inputClassName,
   placeholder = "Add email and press Enter",
   value,
@@ -82,72 +84,76 @@ export function ParticipantsInput({
   return (
     <div
       className={cn(
-        "flex w-full flex-col gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5",
+        "flex w-full gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5",
         className
       )}
       onClick={() => inputRef.current?.focus()}
     >
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {value.map((participant) => {
-            const statusInfo =
-              STATUS_STYLES[participant.status || "pending"] ||
-              STATUS_STYLES.pending;
-            const StatusIcon = statusInfo.icon;
+      {icon ? <div className="flex shrink-0 pt-0.5">{icon}</div> : null}
 
-            return (
-              <span
-                className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-1"
-                key={participant.email}
-              >
-                <StatusIcon
-                  className={cn("h-3 w-3 shrink-0", statusInfo.color)}
-                />
-                <span className="min-w-0 truncate text-[11px] text-white/80">
-                  {participant.email}
-                </span>
-                <button
-                  className="shrink-0 rounded-full p-0.5 text-white/30 transition-colors hover:bg-white/[0.08] hover:text-white/70"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    removeParticipant(participant.email);
-                  }}
-                  type="button"
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {value.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {value.map((participant) => {
+              const statusInfo =
+                STATUS_STYLES[participant.status || "pending"] ||
+                STATUS_STYLES.pending;
+              const StatusIcon = statusInfo.icon;
+
+              return (
+                <span
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.06] px-2 py-1"
+                  key={participant.email}
                 >
-                  <XIcon className="h-3 w-3" />
-                </button>
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      <input
-        className={cn(
-          "w-full bg-transparent text-white/85 text-xs outline-none placeholder:text-white/25",
-          inputClassName
+                  <StatusIcon
+                    className={cn("h-3 w-3 shrink-0", statusInfo.color)}
+                  />
+                  <span className="min-w-0 truncate text-[11px] text-white/80">
+                    {participant.email}
+                  </span>
+                  <button
+                    className="shrink-0 rounded-full p-0.5 text-white/30 transition-colors hover:bg-white/[0.08] hover:text-white/70"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeParticipant(participant.email);
+                    }}
+                    type="button"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
         )}
-        onBlur={commitDraft}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === ",") {
-            event.preventDefault();
-            commitDraft();
-          }
 
-          if (
-            event.key === "Backspace" &&
-            draft.length === 0 &&
-            value.length > 0
-          ) {
-            event.preventDefault();
-            removeParticipant(value.at(-1)!.email);
-          }
-        }}
-        placeholder={value.length === 0 ? placeholder : "Add another..."}
-        ref={inputRef}
-        value={draft}
-      />
+        <input
+          className={cn(
+            "w-full bg-transparent text-white/85 text-xs outline-none placeholder:text-white/25",
+            inputClassName
+          )}
+          onBlur={commitDraft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === ",") {
+              event.preventDefault();
+              commitDraft();
+            }
+
+            if (
+              event.key === "Backspace" &&
+              draft.length === 0 &&
+              value.length > 0
+            ) {
+              event.preventDefault();
+              removeParticipant(value.at(-1)!.email);
+            }
+          }}
+          placeholder={value.length === 0 ? placeholder : "Add another..."}
+          ref={inputRef}
+          value={draft}
+        />
+      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DatePicker, TimePicker } from "@/components/ui/date-time-picker";
 import {
   Form,
   FormControl,
@@ -45,8 +45,9 @@ import type { CalendarEvent } from "@/types/calendar";
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  start: z.string().min(1, "Start time is required"),
-  end: z.string().min(1, "End time is required"),
+  date: z.string().min(1, "Date is required"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
   participants: z
     .array(
       z.object({
@@ -108,38 +109,18 @@ export function EventDetailPanel({
     googleCalendars[0]?.id ??
     "";
 
-  const defaultStart = selectedDate
-    ? format(
-        new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-          9,
-          0
-        ),
-        "yyyy-MM-dd'T'HH:mm"
-      )
-    : "";
-  const defaultEnd = selectedDate
-    ? format(
-        new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-          10,
-          0
-        ),
-        "yyyy-MM-dd'T'HH:mm"
-      )
-    : "";
+  const defaultDate = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+  const defaultStartTime = "09:00";
+  const defaultEndTime = "10:00";
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
-      start: defaultStart,
-      end: defaultEnd,
+      date: defaultDate,
+      startTime: defaultStartTime,
+      endTime: defaultEndTime,
       participants: [],
       calendarId: "",
       location: "",
@@ -151,10 +132,9 @@ export function EventDetailPanel({
       form.reset({
         title: event.title || "",
         description: event.description || "",
-        start: event.start
-          ? format(new Date(event.start), "yyyy-MM-dd'T'HH:mm")
-          : "",
-        end: event.end ? format(new Date(event.end), "yyyy-MM-dd'T'HH:mm") : "",
+        date: event.start ? format(new Date(event.start), "yyyy-MM-dd") : "",
+        startTime: event.start ? format(new Date(event.start), "HH:mm") : "",
+        endTime: event.end ? format(new Date(event.end), "HH:mm") : "",
         participants:
           event.attendees?.map((attendee) => ({
             email: attendee.email,
@@ -167,14 +147,23 @@ export function EventDetailPanel({
       form.reset({
         title: "",
         description: "",
-        start: defaultStart,
-        end: defaultEnd,
+        date: defaultDate,
+        startTime: defaultStartTime,
+        endTime: defaultEndTime,
         participants: [],
         calendarId: "",
         location: "",
       });
     }
-  }, [event, mode, form, defaultStart, defaultEnd, defaultGoogleCalendarId]);
+  }, [
+    event,
+    mode,
+    form,
+    defaultDate,
+    defaultStartTime,
+    defaultEndTime,
+    defaultGoogleCalendarId,
+  ]);
 
   useEffect(() => {
     if (
@@ -215,6 +204,9 @@ export function EventDetailPanel({
         : `/api/calendar/events/${event?.id}`;
       const method = isCreating ? "POST" : "PATCH";
 
+      const start = `${values.date}T${values.startTime}`;
+      const end = `${values.date}T${values.endTime}`;
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -222,8 +214,8 @@ export function EventDetailPanel({
           userId,
           title: values.title,
           description: values.description,
-          start: values.start,
-          end: values.end,
+          start,
+          end,
           location: values.location,
           calendarId: values.calendarId || undefined,
           attendees: values.participants.map((p) => ({
@@ -253,8 +245,8 @@ export function EventDetailPanel({
             body: JSON.stringify({
               eventId: savedEventId,
               eventTitle: values.title,
-              eventStart: values.start,
-              eventEnd: values.end,
+              eventStart: start,
+              eventEnd: end,
               eventLocation: values.location,
               eventCalendarId: values.calendarId,
               invitees: newParticipants.map((p) => p.email),
@@ -441,44 +433,59 @@ export function EventDetailPanel({
               )}
             />
 
-            <div className="space-y-1">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className={glassRow}>
+                      <CalendarIcon className="size-4 shrink-0 text-white/30" />
+                      <DatePicker
+                        onChange={field.onChange}
+                        placeholder="Pick a date"
+                        triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
+                        value={field.value}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className={glassRow}>
+              <ClockIcon className="size-4 shrink-0 text-white/30" />
               <FormField
                 control={form.control}
-                name="start"
+                name="startTime"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="min-w-0 flex-1">
                     <FormControl>
-                      <div className={glassRow}>
-                        <ClockIcon className="size-4 shrink-0 text-white/30" />
-                        <DateTimePicker
-                          onChange={field.onChange}
-                          showIcon={false}
-                          triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
-                          value={field.value}
-                        />
-                      </div>
+                      <TimePicker
+                        onChange={field.onChange}
+                        placeholder="Start"
+                        triggerClassName="h-full min-h-0 w-full rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
+                        value={field.value}
+                      />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
+              <span className="shrink-0 text-white/25 text-xs">–</span>
               <FormField
                 control={form.control}
-                name="end"
+                name="endTime"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="min-w-0 flex-1">
                     <FormControl>
-                      <div className={glassRow}>
-                        <ClockIcon className="size-4 shrink-0 text-white/30" />
-                        <DateTimePicker
-                          onChange={field.onChange}
-                          showIcon={false}
-                          triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
-                          value={field.value}
-                        />
-                      </div>
+                      <TimePicker
+                        onChange={field.onChange}
+                        placeholder="End"
+                        triggerClassName="h-full min-h-0 w-full rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
+                        value={field.value}
+                      />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -554,20 +561,14 @@ export function EventDetailPanel({
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <div className="space-y-1.5">
-                            <div className="flex items-start gap-3">
-                              <UsersIcon className="mt-3 size-4 shrink-0 text-white/30" />
-                              <ParticipantsInput
-                                className="flex-1 border-white/[0.06]"
-                                onChange={field.onChange}
-                                placeholder="Add participants by email"
-                                value={field.value}
-                              />
-                            </div>
-                            <p className="pl-7 text-[10px] text-white/25">
-                              Invitations will be sent via email.
-                            </p>
-                          </div>
+                          <ParticipantsInput
+                            icon={
+                              <UsersIcon className="size-4 text-white/30" />
+                            }
+                            onChange={field.onChange}
+                            placeholder="Add participants by email"
+                            value={field.value}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

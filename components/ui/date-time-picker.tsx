@@ -453,6 +453,104 @@ export function DateTimePicker({
   );
 }
 
+export function DatePicker({
+  disabled,
+  onChange,
+  placeholder = "Pick a date",
+  popoverClassName,
+  triggerClassName,
+  value,
+}: {
+  disabled?: boolean;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  popoverClassName?: string;
+  triggerClassName?: string;
+  value?: string;
+}) {
+  const selectedDate = value
+    ? (() => {
+        const p = parse(value, "yyyy-MM-dd", new Date());
+        return isValid(p) ? p : null;
+      })()
+    : null;
+
+  const updateDate = (next: Date) => {
+    onChange(format(next, "yyyy-MM-dd"));
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        className={cn(
+          "liquid-glass-input flex h-10 w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-foreground text-sm transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          triggerClassName
+        )}
+        disabled={disabled}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                "truncate",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              {selectedDate
+                ? format(selectedDate, "EEE, MMM d, yyyy")
+                : placeholder}
+            </span>
+          </span>
+        </span>
+        <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="start"
+        className={cn(
+          "w-[min(100vw-1.5rem,320px)] max-w-[320px] gap-0 overflow-hidden rounded-3xl border border-border bg-popover p-0 text-popover-foreground shadow-[var(--glass-shadow-elevated)] ring-1 ring-border/60",
+          popoverClassName
+        )}
+        sideOffset={8}
+      >
+        <div className="border-border border-b px-5 py-3.5">
+          <p className="font-medium text-[10px] text-muted-foreground uppercase tracking-[0.2em]">
+            Date
+          </p>
+          <p className="mt-1 font-heading font-semibold text-foreground text-sm">
+            {selectedDate
+              ? format(selectedDate, "EEEE, MMMM d")
+              : "Choose a date"}
+          </p>
+        </div>
+
+        <div className="px-3 py-3 sm:px-4">
+          <MiniCalendar onSelect={updateDate} selected={selectedDate} />
+        </div>
+
+        <div className="flex items-center justify-between gap-2 border-border border-t px-3 py-2.5 sm:px-4">
+          <Button
+            className="h-8 rounded-full border border-border bg-transparent px-3.5 text-muted-foreground text-xs hover:bg-accent hover:text-accent-foreground"
+            onClick={() => onChange("")}
+            type="button"
+            variant="ghost"
+          >
+            Clear
+          </Button>
+          <Button
+            className="h-8 rounded-full border border-border bg-transparent px-3.5 text-muted-foreground text-xs hover:bg-accent hover:text-accent-foreground"
+            onClick={() => onChange(format(new Date(), "yyyy-MM-dd"))}
+            type="button"
+            variant="ghost"
+          >
+            Today
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function TimePicker({
   disabled,
   onChange,
