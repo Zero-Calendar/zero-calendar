@@ -548,7 +548,6 @@ export default function Home() {
             {[
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
-              { label: "Security", href: "/security" },
             ].map((link) => (
               <Link
                 className="text-[12px] text-white/22 transition-colors duration-300 hover:text-white/45"

@@ -10,7 +10,6 @@ import {
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -35,8 +34,13 @@ import { useToast } from "@/hooks/use-toast";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
+/** Opaque menu surface (settings selects sit over glass cards; avoid see-through popovers). */
+const settingsSelectContent =
+  "rounded-xl border border-white/[0.14] !bg-[#101010] text-popover-foreground shadow-2xl ring-1 ring-white/12";
+const settingsSelectTrigger =
+  "h-8 rounded-lg border-white/[0.1] bg-white/[0.07] text-[11px] hover:bg-white/[0.1]";
+
 const formSchema = z.object({
-  theme: z.enum(["light", "dark", "system"]),
   defaultView: z.enum(["month", "week", "day"]),
   showWeekends: z.boolean(),
   showWeekNumbers: z.boolean(),
@@ -71,7 +75,6 @@ export function ModernSettingsForm({
   userProvider,
 }: ModernSettingsFormProps) {
   const { toast } = useToast();
-  const { setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>("appearance");
 
@@ -80,7 +83,6 @@ export function ModernSettingsForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      theme: initialPreferences.theme || "system",
       defaultView: initialPreferences.defaultView || "month",
       showWeekends: initialPreferences.showWeekends !== false,
       showWeekNumbers: initialPreferences.showWeekNumbers,
@@ -104,7 +106,6 @@ export function ModernSettingsForm({
       });
 
       if (!response.ok) throw new Error("Failed to save preferences");
-      setTheme(values.theme);
       toast({ title: "Settings saved", description: "Your preferences have been updated" });
     } catch {
       toast({ title: "Error", description: "Failed to save preferences", variant: "destructive" });
@@ -180,48 +181,18 @@ export function ModernSettingsForm({
                   <div className="liquid-glass-subtle space-y-5 rounded-2xl p-5">
                     <FormField
                       control={form.control}
-                      name="theme"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel className="text-xs font-medium text-white/70">Theme</FormLabel>
-                            <Select
-                              defaultValue={field.value}
-                              onValueChange={(v) => { field.onChange(v); setTheme(v); }}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="h-8 w-32 rounded-lg border-white/[0.06] bg-white/[0.03] text-[11px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="liquid-glass-elevated rounded-xl border-white/[0.08]">
-                                <SelectItem value="light">Light</SelectItem>
-                                <SelectItem value="dark">Dark</SelectItem>
-                                <SelectItem value="system">System</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="h-px bg-white/[0.04]" />
-
-                    <FormField
-                      control={form.control}
                       name="defaultView"
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center justify-between">
                             <FormLabel className="text-xs font-medium text-white/70">Default View</FormLabel>
-                            <Select defaultValue={field.value} onValueChange={field.onChange}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-8 w-32 rounded-lg border-white/[0.06] bg-white/[0.03] text-[11px]">
+                                <SelectTrigger className={cn(settingsSelectTrigger, "w-32")}>
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="liquid-glass-elevated rounded-xl border-white/[0.08]">
+                              <SelectContent className={cn(settingsSelectContent, "max-h-[280px]")}>
                                 <SelectItem value="month">Month</SelectItem>
                                 <SelectItem value="week">Week</SelectItem>
                                 <SelectItem value="day">Day</SelectItem>
@@ -303,13 +274,18 @@ export function ModernSettingsForm({
                               <FormLabel className="text-xs font-medium text-white/70">Timezone</FormLabel>
                               <p className="text-[10px] text-white/30">Detected: {detectedTimezone}</p>
                             </div>
-                            <Select defaultValue={field.value} onValueChange={field.onChange}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-8 w-48 rounded-lg border-white/[0.06] bg-white/[0.03] text-[11px]">
+                                <SelectTrigger className={cn(settingsSelectTrigger, "w-48")}>
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="liquid-glass-elevated max-h-[200px] rounded-xl border-white/[0.08]">
+                              <SelectContent
+                                className={cn(
+                                  settingsSelectContent,
+                                  "max-h-[55dvh] min-w-[var(--anchor-width)] sm:max-w-none"
+                                )}
+                              >
                                 {Intl.supportedValuesOf("timeZone").map((tz) => (
                                   <SelectItem key={tz} value={tz}>{tz.replace(/_/g, " ")}</SelectItem>
                                 ))}
@@ -333,13 +309,13 @@ export function ModernSettingsForm({
                               <FormLabel className="text-xs font-medium text-white/70">Default Duration</FormLabel>
                               <p className="text-[10px] text-white/30">For newly created events</p>
                             </div>
-                            <Select defaultValue={field.value} onValueChange={field.onChange}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-8 w-32 rounded-lg border-white/[0.06] bg-white/[0.03] text-[11px]">
+                                <SelectTrigger className={cn(settingsSelectTrigger, "w-32")}>
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="liquid-glass-elevated rounded-xl border-white/[0.08]">
+                              <SelectContent className={cn(settingsSelectContent, "max-h-[280px]")}>
                                 <SelectItem value="30">30 min</SelectItem>
                                 <SelectItem value="60">1 hour</SelectItem>
                                 <SelectItem value="90">1.5 hours</SelectItem>

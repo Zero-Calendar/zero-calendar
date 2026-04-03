@@ -573,10 +573,9 @@ export function ModernCalendarView({
     <>
       {/* AI Quick Input */}
       <div
-        className="liquid-glass-input flex cursor-text items-center gap-2 rounded-xl px-3 py-2.5"
+        className="liquid-glass-input flex cursor-text items-center rounded-xl px-3 py-2.5"
         onClick={() => openAiPanel()}
       >
-        <SparklesIcon className="h-3.5 w-3.5 text-blue-400/60" />
         <span className="text-xs text-white/25">Ask Zero anything...</span>
       </div>
 
@@ -645,10 +644,9 @@ export function ModernCalendarView({
       {/* Google Calendars */}
       {userProvider === "google" && googleCalendars.length > 0 && (
         <div className="liquid-glass-subtle rounded-xl p-3">
-          <div className="mb-2.5 flex items-center gap-2">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            <span className="section-label">My Calendars</span>
-          </div>
+              <div className="mb-2.5">
+                <span className="section-label">My Calendars</span>
+              </div>
           <div className="space-y-1.5">
             {googleCalendars.map((calendar) => (
               <div className="flex items-center justify-between gap-2 py-0.5" key={calendar.id}>

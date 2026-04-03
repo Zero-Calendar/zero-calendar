@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { SendIcon, SparklesIcon, XIcon } from "lucide-react";
+import { SendIcon, XIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -127,14 +127,9 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
       transition={spring}
     >
       <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
-            <SparklesIcon className="h-3.5 w-3.5 text-blue-400" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white/90">Zero AI</h3>
-            <p className="text-[10px] text-white/30">Calendar assistant</p>
-          </div>
+        <div>
+          <h3 className="text-sm font-semibold text-white/90">Zero AI</h3>
+          <p className="text-[10px] text-white/30">Calendar assistant</p>
         </div>
         <Button
           className="h-7 w-7 rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white/70"
@@ -177,11 +172,6 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
 
           {messages.map((msg, idx) => (
             <div className={cn("flex gap-2.5", msg.role === "user" && "flex-row-reverse")} key={idx}>
-              {msg.role === "assistant" && (
-                <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
-                  <SparklesIcon className="h-3 w-3 text-blue-400" />
-                </div>
-              )}
               <div
                 className={cn(
                   "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
@@ -203,9 +193,6 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
 
           {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex gap-2.5">
-              <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
-                <SparklesIcon className="h-3 w-3 animate-pulse text-blue-400" />
-              </div>
               <div className="rounded-2xl bg-white/[0.04] px-3.5 py-2.5">
                 <div className="flex gap-1">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/30" />

@@ -6,6 +6,7 @@ import {
 } from "@openrouter/ai-sdk-provider";
 
 const apiKey = process.env.OPENROUTER_API_KEY;
+const defaultModel = process.env.OPENROUTER_MODEL || "x-ai/grok-4.1-fast";
 
 if (!apiKey) {
   throw new Error("OPENROUTER_API_KEY is not configured");
@@ -17,8 +18,12 @@ const openrouter = createOpenRouter({
 });
 
 export function getOpenRouterModel() {
-  const model = process.env.OPENROUTER_MODEL || "x-ai/grok-4.1-fast";
-  return openrouter.chat(model);
+  return openrouter.chat(defaultModel);
+}
+
+function supportsReasoningEffort(model: string) {
+  // Grok models via OpenRouter reject the reasoning.effort payload.
+  return !model.startsWith("x-ai/");
 }
 
 export function getOpenRouterProviderOptions(user?: string): {
@@ -26,10 +31,14 @@ export function getOpenRouterProviderOptions(user?: string): {
 } {
   return {
     openrouter: {
-      reasoning: {
-        enabled: true,
-        effort: "high",
-      },
+      ...(supportsReasoningEffort(defaultModel)
+        ? {
+            reasoning: {
+              enabled: true,
+              effort: "high",
+            },
+          }
+        : {}),
       ...(user ? { user } : {}),
     },
   };
