@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { api } from "@/convex/_generated/api";
 import { fetchAuthMutation, getCurrentAuthUser } from "@/lib/auth-server";
-import { createGoogleCalendarEvent, ensureGoogleCalendarWatch } from "@/lib/google-calendar";
-import { createEvent, deleteEvent, getEvents, syncWithGoogleCalendar } from "@/lib/calendar";
-import { upsertUserEvent, upsertUserRecord } from "@/lib/store";
+import { syncCreatedLocalEventToGoogle } from "@/lib/calendar-google-sync-server";
+import { createEvent, getEvents, syncWithGoogleCalendar } from "@/lib/calendar";
+import { ensureGoogleCalendarWatch } from "@/lib/google-calendar";
+import { upsertUserRecord } from "@/lib/store";
 
 function getWebhookBaseUrl(request: Request) {
   const origin = new URL(request.url).origin;
@@ -92,6 +93,8 @@ export async function POST(request: Request) {
       start: body.start,
       end: body.end,
       location: body.location,
+      attendees: body.attendees,
+      calendarId: body.calendarId,
       color: body.color,
       categoryId: body.category,
       categories: body.category ? [body.category] : undefined,
@@ -99,42 +102,9 @@ export async function POST(request: Request) {
       source: "local",
     });
 
-    let finalEvent = event;
-
-    if (body.pushToGoogle) {
-      try {
-        const tokens = await fetchAuthMutation(api.auth.refreshGoogleAccessToken, {});
-        if (tokens?.accessToken && tokens?.refreshToken) {
-          await upsertUserRecord({
-            userId: user.id,
-            provider: "google",
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            expiresAt: tokens.accessTokenExpiresAt
-              ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-              : 0,
-          });
-
-          const syncedEvent = await createGoogleCalendarEvent(
-            user.id,
-            tokens.accessToken,
-            tokens.refreshToken,
-            tokens.accessTokenExpiresAt
-              ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-              : 0,
-            event
-          );
-
-          if (syncedEvent) {
-            await deleteEvent(user.id, event.id);
-            await upsertUserEvent(syncedEvent);
-            finalEvent = syncedEvent;
-          }
-        }
-      } catch (error) {
-        console.error("Failed to push created event to Google Calendar:", error);
-      }
-    }
+    const finalEvent = body.pushToGoogle
+      ? await syncCreatedLocalEventToGoogle(user.id, event)
+      : event;
 
     return NextResponse.json({ event: finalEvent });
   } catch (error) {

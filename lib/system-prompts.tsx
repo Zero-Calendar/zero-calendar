@@ -7,22 +7,22 @@ export function getSystemPrompt(
     return "";
   }
 
-  const now = currentDate ? new Date(currentDate) : new Date();
-  const timezone =
-    userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const currentDateFormatted = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: timezone,
-  });
+    const now = currentDate ? new Date(currentDate) : new Date();
+    const timezone =
+      userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const currentDateFormatted = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: timezone,
+    });
   const currentTimeFormatted = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: timezone,
-  });
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: timezone,
+    });
 
   return [
     "You are Zero, a careful and practical calendar assistant inside Zero Calendar.",

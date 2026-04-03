@@ -1,6 +1,11 @@
 import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 import { calendarTools } from "@/lib/ai-tools";
+import {
+  syncCreatedLocalEventToGoogle,
+  syncDeletedEventToGoogle,
+  syncUpdatedEventToGoogle,
+} from "@/lib/calendar-google-sync-server";
 import { getCurrentAuthUser } from "@/lib/auth-server";
 import {
   getOpenRouterModel,
@@ -228,7 +233,7 @@ const tools = {
         };
       }
 
-      const event = await calendarTools.createEvent(
+      const localEvent = await calendarTools.createEvent(
         userId,
         params.title,
         params.startTime,
@@ -237,6 +242,8 @@ const tools = {
         params.location,
         params.color
       );
+
+      const event = await syncCreatedLocalEventToGoogle(userId, localEvent);
 
       return {
         success: true,
@@ -303,7 +310,7 @@ const tools = {
         };
       }
 
-      const event = await calendarTools.updateEvent(userId, params.eventId, {
+      const updatedLocal = await calendarTools.updateEvent(userId, params.eventId, {
         ...(params.color !== undefined ? { color: params.color } : {}),
         ...(params.description !== undefined
           ? { description: params.description }
@@ -313,6 +320,12 @@ const tools = {
         ...(params.startTime !== undefined ? { start: params.startTime } : {}),
         ...(params.title !== undefined ? { title: params.title } : {}),
       });
+
+      const event = await syncUpdatedEventToGoogle(
+        userId,
+        existingEvent,
+        updatedLocal
+      );
 
       return {
         success: true,
@@ -335,6 +348,7 @@ const tools = {
         return { success: false, error: "Event not found." };
       }
 
+      await syncDeletedEventToGoogle(userId, event);
       await calendarTools.deleteEvent(userId, eventId);
 
       return {

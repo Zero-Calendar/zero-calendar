@@ -5,6 +5,7 @@ export interface CalendarEvent {
     name?: string;
     status?: "accepted" | "declined" | "tentative" | "needs-action";
   }[];
+  calendarId?: string;
   categories?: string[];
   color?: string;
   description?: string;

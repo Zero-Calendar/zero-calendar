@@ -4,18 +4,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  CalendarIcon,
   ChevronDownIcon,
   ClockIcon,
   MapPinIcon,
-  TagIcon,
   TextIcon,
   Trash2Icon,
+  UsersIcon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   Form,
   FormControl,
@@ -31,23 +33,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToastAction } from "@/components/ui/toast";
+import { ParticipantsInput } from "@/components/ui/participants-input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { CalendarCategory, CalendarEvent } from "@/types/calendar";
+import type { CalendarEvent } from "@/types/calendar";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   start: z.string().min(1, "Start time is required"),
   end: z.string().min(1, "End time is required"),
-  category: z.string().optional(),
+  participants: z.array(z.string()).default([]),
+  calendarId: z.string().optional(),
   location: z.string().optional(),
 });
 
 interface EventDetailPanelProps {
-  categories: CalendarCategory[];
   event: CalendarEvent | null;
+  googleCalendars: {
+    backgroundColor: string;
+    id: string;
+    primary: boolean;
+    summary: string;
+    visible: boolean;
+  }[];
   mode: "create" | "edit" | "view";
   onClose: () => void;
   onEventCreated: () => void;
@@ -66,7 +77,7 @@ const glassRow =
 export function EventDetailPanel({
   event,
   mode,
-  categories,
+  googleCalendars,
   selectedDate,
   userId,
   onClose,
@@ -81,6 +92,10 @@ export function EventDetailPanel({
 
   const isCreating = mode === "create";
   const isEditing = mode === "edit";
+  const defaultGoogleCalendarId =
+    googleCalendars.find((calendar) => calendar.primary)?.id ??
+    googleCalendars[0]?.id ??
+    "";
 
   const defaultStart = selectedDate
     ? format(
@@ -102,7 +117,8 @@ export function EventDetailPanel({
       description: "",
       start: defaultStart,
       end: defaultEnd,
-      category: "",
+      participants: [],
+      calendarId: "",
       location: "",
     },
   });
@@ -114,7 +130,8 @@ export function EventDetailPanel({
         description: event.description || "",
         start: event.start ? format(new Date(event.start), "yyyy-MM-dd'T'HH:mm") : "",
         end: event.end ? format(new Date(event.end), "yyyy-MM-dd'T'HH:mm") : "",
-        category: event.categories?.[0] || "",
+        participants: event.attendees?.map((attendee) => attendee.email) || [],
+        calendarId: event.calendarId || defaultGoogleCalendarId,
         location: event.location || "",
       });
     } else if (mode === "create") {
@@ -123,11 +140,24 @@ export function EventDetailPanel({
         description: "",
         start: defaultStart,
         end: defaultEnd,
-        category: "",
+        participants: [],
+        calendarId: "",
         location: "",
       });
     }
-  }, [event, mode, form, defaultStart, defaultEnd]);
+  }, [event, mode, form, defaultStart, defaultEnd, defaultGoogleCalendarId]);
+
+  useEffect(() => {
+    if (!isCreating || !defaultGoogleCalendarId || form.getValues("calendarId")) {
+      return;
+    }
+
+    form.setValue("calendarId", defaultGoogleCalendarId, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+  }, [defaultGoogleCalendarId, form, isCreating]);
 
   useEffect(() => {
     if (isCreating && titleRef.current) {
@@ -150,7 +180,17 @@ export function EventDetailPanel({
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, userId, pushToGoogle: true }),
+        body: JSON.stringify({
+          userId,
+          title: values.title,
+          description: values.description,
+          start: values.start,
+          end: values.end,
+          location: values.location,
+          calendarId: values.calendarId || undefined,
+          attendees: values.participants.map((email) => ({ email })),
+          pushToGoogle: true,
+        }),
       });
 
       if (!response.ok) throw new Error("Failed to save event");
@@ -180,13 +220,68 @@ export function EventDetailPanel({
       });
       if (!response.ok) throw new Error("Failed to delete");
 
-      toast({ title: "Event deleted", description: "Your event has been deleted" });
+      toast({
+        title: "Event deleted",
+        description: "Your event has been deleted",
+        action: (
+          <ToastAction
+            altText="Undo event deletion"
+            onClick={() => {
+              void restoreDeletedEvent(event);
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
       onEventDeleted();
       onClose();
     } catch {
       toast({ title: "Error", description: "Failed to delete event", variant: "destructive" });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function restoreDeletedEvent(deletedEvent: CalendarEvent) {
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/calendar/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          title: deletedEvent.title,
+          description: deletedEvent.description,
+          start: deletedEvent.start,
+          end: deletedEvent.end,
+          location: deletedEvent.location,
+          color: deletedEvent.color,
+          allDay: deletedEvent.allDay,
+          calendarId: deletedEvent.calendarId,
+          attendees: deletedEvent.attendees,
+          pushToGoogle: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to restore");
+      }
+
+      toast({
+        title: "Deletion undone",
+        description: `"${deletedEvent.title}" has been restored`,
+      });
+      onEventCreated();
+    } catch {
+      toast({
+        title: "Could not undo",
+        description: "Failed to restore the deleted event",
+        variant: "destructive",
+      });
     }
   }
 
@@ -256,10 +351,11 @@ export function EventDetailPanel({
                     <FormControl>
                       <div className={glassRow}>
                         <ClockIcon className="size-4 shrink-0 text-white/30" />
-                        <input
-                          className="min-h-0 min-w-0 flex-1 bg-transparent py-0 text-xs leading-none text-white/80 outline-none placeholder:text-white/25"
-                          type="datetime-local"
-                          {...field}
+                        <DateTimePicker
+                          showIcon={false}
+                          triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </div>
                     </FormControl>
@@ -275,10 +371,11 @@ export function EventDetailPanel({
                     <FormControl>
                       <div className={glassRow}>
                         <ClockIcon className="size-4 shrink-0 text-white/30" />
-                        <input
-                          className="min-h-0 min-w-0 flex-1 bg-transparent py-0 text-xs leading-none text-white/80 outline-none placeholder:text-white/25"
-                          type="datetime-local"
-                          {...field}
+                        <DateTimePicker
+                          showIcon={false}
+                          triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </div>
                     </FormControl>
@@ -317,25 +414,30 @@ export function EventDetailPanel({
                     )}
                   />
 
-                  {categories.length > 0 && (
+                  {isCreating && googleCalendars.length > 1 && (
                     <FormField
                       control={form.control}
-                      name="category"
+                      name="calendarId"
                       render={({ field }) => (
                         <FormItem>
                           <div className={glassRow}>
-                            <TagIcon className="size-4 shrink-0 text-white/30" />
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <CalendarIcon className="size-4 shrink-0 text-white/30" />
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || defaultGoogleCalendarId}
+                            >
                               <FormControl>
                                 <SelectTrigger
                                   className="!h-full min-h-0 min-w-0 flex-1 justify-between gap-2 rounded-none border-0 bg-transparent px-0 py-0 text-xs text-white/80 shadow-none focus:ring-0 [&_svg]:size-3.5 [&_svg]:text-white/40"
                                 >
-                                  <SelectValue placeholder="Category" />
+                                  <SelectValue placeholder="Calendar" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="rounded-xl border border-white/[0.12] shadow-2xl">
-                                {categories.map((cat) => (
-                                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                {googleCalendars.map((calendar) => (
+                                  <SelectItem key={calendar.id} value={calendar.id}>
+                                    {calendar.summary}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -345,6 +447,32 @@ export function EventDetailPanel({
                       )}
                     />
                   )}
+
+                  <FormField
+                    control={form.control}
+                    name="participants"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <div className={cn(glassRow, "min-h-10 items-start py-2")}>
+                              <UsersIcon className="mt-1 size-4 shrink-0 text-white/30" />
+                              <ParticipantsInput
+                                className="min-h-0 flex-1 border-0 bg-transparent p-0"
+                                placeholder="Add participants by email"
+                                value={field.value}
+                                onChange={field.onChange}
+                              />
+                            </div>
+                            <p className="px-1 text-[10px] text-white/30">
+                              Press Enter or comma to add each participant.
+                            </p>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}

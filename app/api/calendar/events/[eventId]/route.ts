@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { api } from "@/convex/_generated/api";
-import { fetchAuthMutation, getCurrentAuthUser } from "@/lib/auth-server";
-import { deleteEvent, getEvent, updateEvent } from "@/lib/calendar";
+import { getCurrentAuthUser } from "@/lib/auth-server";
 import {
-  createGoogleCalendarEvent,
-  deleteGoogleCalendarEvent,
-  updateGoogleCalendarEvent,
-} from "@/lib/google-calendar";
-import { upsertUserEvent, upsertUserRecord } from "@/lib/store";
+  syncDeletedEventToGoogle,
+  syncUpdatedEventToGoogle,
+} from "@/lib/calendar-google-sync-server";
+import { deleteEvent, getEvent, updateEvent } from "@/lib/calendar";
 
 interface RouteContext {
   params: Promise<{
@@ -42,65 +39,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       start: body.start,
       end: body.end,
       location: body.location,
+      attendees: body.attendees,
+      calendarId: body.calendarId,
       color: body.color,
       categoryId: body.category,
       categories: body.category ? [body.category] : undefined,
       allDay: body.allDay,
     });
 
-    let finalEvent = event;
-
-    if (body.pushToGoogle) {
-      try {
-        const tokens = await fetchAuthMutation(api.auth.refreshGoogleAccessToken, {});
-        if (tokens?.accessToken && tokens?.refreshToken) {
-          await upsertUserRecord({
-            userId: user.id,
-            provider: "google",
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            expiresAt: tokens.accessTokenExpiresAt
-              ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-              : 0,
-          });
-
-          if (existingEvent.source === "google") {
-            const syncedEvent = await updateGoogleCalendarEvent(
-              user.id,
-              tokens.accessToken,
-              tokens.refreshToken,
-              tokens.accessTokenExpiresAt
-                ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-                : 0,
-              event
-            );
-
-            if (syncedEvent) {
-              await upsertUserEvent(syncedEvent);
-              finalEvent = syncedEvent;
-            }
-          } else {
-            const syncedEvent = await createGoogleCalendarEvent(
-              user.id,
-              tokens.accessToken,
-              tokens.refreshToken,
-              tokens.accessTokenExpiresAt
-                ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-                : 0,
-              event
-            );
-
-            if (syncedEvent) {
-              await deleteEvent(user.id, event.id);
-              await upsertUserEvent(syncedEvent);
-              finalEvent = syncedEvent;
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to sync updated event to Google Calendar:", error);
-      }
-    }
+    const finalEvent = body.pushToGoogle
+      ? await syncUpdatedEventToGoogle(user.id, existingEvent, event)
+      : event;
 
     return NextResponse.json({ event: finalEvent });
   } catch (error) {
@@ -134,35 +83,8 @@ export async function DELETE(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    if (pushToGoogle && (existingEvent.source === "google" || existingEvent.sourceId)) {
-      try {
-        const tokens = await fetchAuthMutation(api.auth.refreshGoogleAccessToken, {});
-        if (tokens?.accessToken && tokens?.refreshToken) {
-          await upsertUserRecord({
-            userId: user.id,
-            provider: "google",
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            expiresAt: tokens.accessTokenExpiresAt
-              ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-              : 0,
-          });
-
-          await deleteGoogleCalendarEvent(
-            user.id,
-            tokens.accessToken,
-            tokens.refreshToken,
-            tokens.accessTokenExpiresAt
-              ? Math.floor(tokens.accessTokenExpiresAt / 1000)
-              : 0,
-            existingEvent.source === "google"
-              ? existingEvent.id
-              : `google_${existingEvent.sourceId}`
-          );
-        }
-      } catch (error) {
-        console.error("Failed to delete event in Google Calendar:", error);
-      }
+    if (pushToGoogle) {
+      await syncDeletedEventToGoogle(user.id, existingEvent);
     }
 
     await deleteEvent(user.id, eventId);

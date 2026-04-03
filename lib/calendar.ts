@@ -43,6 +43,7 @@ export interface CalendarEvent {
     name?: string;
     status?: "accepted" | "declined" | "tentative" | "needs-action";
   }[];
+  calendarId?: string;
   categories?: string[];
   categoryId?: string;
   color?: string;
@@ -995,7 +996,8 @@ export async function syncWithGoogleCalendar(
             userData.accessToken as string,
             userData.refreshToken as string,
             userData.expiresAt as number,
-            { ...event, id: existingGoogleEvent.id, sourceId: existingGoogleEvent.sourceId }
+            { ...event, id: existingGoogleEvent.id, sourceId: existingGoogleEvent.sourceId },
+            event.calendarId ?? existingGoogleEvent.calendarId
           );
 
           if (syncedEvent) {
@@ -1009,7 +1011,8 @@ export async function syncWithGoogleCalendar(
             userData.accessToken as string,
             userData.refreshToken as string,
             userData.expiresAt as number,
-            event
+            event,
+            event.calendarId
           );
 
           if (syncedEvent) {

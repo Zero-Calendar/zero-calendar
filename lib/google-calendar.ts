@@ -12,6 +12,11 @@ const GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 const DEFAULT_CALENDAR_ID = "primary";
 
 interface GoogleCalendarEvent {
+  attendees?: Array<{
+    displayName?: string;
+    email: string;
+    responseStatus?: "accepted" | "declined" | "tentative" | "needsAction";
+  }>;
   colorId?: string;
   created?: string;
   creator?: {
@@ -264,7 +269,8 @@ async function fetchGoogleCalendarJson<T>(params: {
  */
 function convertGoogleEventToCalendarEvent(
   googleEvent: GoogleCalendarEvent,
-  userId: string
+  userId: string,
+  calendarId: string = DEFAULT_CALENDAR_ID
 ): CalendarEvent {
   const isAllDay = !!(googleEvent.start.date && googleEvent.end.date);
   const start = isAllDay
@@ -287,6 +293,15 @@ function convertGoogleEventToCalendarEvent(
     userId,
     source: "google",
     sourceId: googleEvent.id,
+    calendarId,
+    attendees: googleEvent.attendees?.map((attendee) => ({
+      email: attendee.email,
+      name: attendee.displayName,
+      status:
+        attendee.responseStatus === "needsAction"
+          ? "needs-action"
+          : attendee.responseStatus,
+    })),
     allDay: isAllDay,
     timezone: googleEvent.start.timeZone || "UTC",
   };
@@ -305,6 +320,12 @@ async function convertCalendarEventToGoogleEvent(
     id: googleEventId,
     summary: event.title,
     description: event.description,
+    attendees: event.attendees?.map((attendee) => ({
+      email: attendee.email,
+      displayName: attendee.name,
+      responseStatus:
+        attendee.status === "needs-action" ? "needsAction" : attendee.status,
+    })),
     start: event.allDay
       ? {
           date: event.start.slice(0, 10),
@@ -355,7 +376,7 @@ export async function getGoogleCalendarEvents(
     });
 
     const events = (data.items ?? []).map((item: GoogleCalendarEvent) =>
-      convertGoogleEventToCalendarEvent(item, userId)
+      convertGoogleEventToCalendarEvent(item, userId, calendarId)
     );
 
     await storeGoogleEventsInDatabase(userId, events);
@@ -414,7 +435,7 @@ export async function createGoogleCalendarEvent(
       context: "Failed to create Google Calendar event",
     });
 
-    return convertGoogleEventToCalendarEvent(data, userId);
+    return convertGoogleEventToCalendarEvent(data, userId, calendarId);
   } catch (error) {
     console.error("Error creating Google Calendar event:", error);
     return null;
@@ -457,7 +478,7 @@ export async function updateGoogleCalendarEvent(
       context: "Failed to update Google Calendar event",
     });
 
-    return convertGoogleEventToCalendarEvent(data, userId);
+    return convertGoogleEventToCalendarEvent(data, userId, calendarId);
   } catch (error) {
     console.error("Error updating Google Calendar event:", error);
     return null;

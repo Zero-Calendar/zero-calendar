@@ -1,13 +1,12 @@
 import { ModernCalendarView } from "@/components/modern-calendar-view";
 import { getCurrentAuthUser } from "@/lib/auth-server";
-import { getEvents, getUserCategories } from "@/lib/calendar";
-import type { CalendarCategory, CalendarEvent } from "@/types/calendar";
+import { getEvents } from "@/lib/calendar";
+import type { CalendarEvent } from "@/types/calendar";
 
 export default async function CalendarPage() {
   const user = await getCurrentAuthUser();
 
   let events: CalendarEvent[] = [];
-  let categories: CalendarCategory[] = [];
 
   if (user?.id) {
     const today = new Date();
@@ -15,13 +14,11 @@ export default async function CalendarPage() {
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
     events = await getEvents(user.id, startOfMonth, endOfMonth);
-    categories = await getUserCategories(user.id);
   }
 
   return (
     <div className="h-dvh overflow-hidden bg-background">
       <ModernCalendarView
-        initialCategories={categories}
         initialEvents={events}
         userEmail={user?.email ?? undefined}
         userId={user?.id}

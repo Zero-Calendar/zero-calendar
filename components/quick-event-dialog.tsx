@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TimePicker } from "@/components/ui/date-time-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -208,11 +209,11 @@ export function QuickEventDialog({
                           Time
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            className="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] focus-visible:ring-white/20"
+                          <TimePicker
+                            triggerClassName="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] text-sm"
                             placeholder="Optional"
-                            type="time"
-                            {...field}
+                            value={field.value}
+                            onChange={field.onChange}
                           />
                         </FormControl>
                         <FormMessage />

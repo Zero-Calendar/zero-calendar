@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { CalendarCategory, CalendarEvent } from "@/lib/calendar";
@@ -239,10 +240,10 @@ export function EventDialog({
                       Start
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        className="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] text-sm focus-visible:ring-white/20"
-                        type="datetime-local"
-                        {...field}
+                      <DateTimePicker
+                        triggerClassName="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] text-sm"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
@@ -259,10 +260,10 @@ export function EventDialog({
                       End
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        className="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] text-sm focus-visible:ring-white/20"
-                        type="datetime-local"
-                        {...field}
+                      <DateTimePicker
+                        triggerClassName="h-10 rounded-lg border-white/[0.08] bg-white/[0.04] text-sm"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
