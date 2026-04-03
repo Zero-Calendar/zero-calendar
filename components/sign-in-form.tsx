@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, CalendarIcon } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
+const spring = { type: "spring", stiffness: 260, damping: 28 } as const;
+
 export default function SignInForm() {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/calendar";
@@ -21,7 +23,7 @@ export default function SignInForm() {
         provider: "google",
         callbackURL: callbackUrl,
       });
-    } catch (_err) {
+    } catch {
       setError("Failed to sign in. Please try again.");
       setIsLoading(false);
     }
@@ -30,73 +32,61 @@ export default function SignInForm() {
   const errorMessage = searchParams.get("error");
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6 text-foreground">
-      <div className="grid-background pointer-events-none fixed inset-0 z-0" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
+      {/* Ambient background layers */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(59,130,246,0.08),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_70%_90%,rgba(139,92,246,0.05),transparent_50%)]" />
+        <div className="grid-background absolute inset-0 opacity-40" />
+      </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-sm px-6">
+        {/* Logo + heading */}
         <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          className="mb-10 flex flex-col items-center text-center"
+          initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
+          transition={{ ...spring, delay: 0.05 }}
         >
-          <Link
-            className="group inline-flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white"
-            href="/"
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            Back
-          </Link>
-        </motion.div>
-
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <div className="mb-6 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.06]">
-              <CalendarIcon className="h-6 w-6 text-white" strokeWidth={2} />
-            </div>
+          <div className="liquid-glass-elevated mb-5 flex size-14 items-center justify-center rounded-2xl">
+            <CalendarIcon className="size-6 text-white/90" strokeWidth={1.8} />
           </div>
-          <h1 className="mb-2 font-bold text-3xl">Sign in to Zero</h1>
-          <p className="text-sm text-white/50">
-            Continue with your Google account
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Sign in to Zero
+          </h1>
+          <p className="mt-1.5 text-sm text-white/40">
+            AI-powered calendar, built for focus
           </p>
         </motion.div>
 
+        {/* Glass card */}
         <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-          initial={{ opacity: 0, y: 40 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          className="liquid-glass-elevated overflow-hidden rounded-2xl p-5"
+          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+          transition={{ ...spring, delay: 0.12 }}
         >
           {(error || errorMessage) && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-200 text-sm">
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 text-[13px] leading-snug text-red-300">
               {error || errorMessage}
             </div>
           )}
 
           <motion.button
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-white font-medium text-black text-sm transition-all hover:bg-white/95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="liquid-glass-input group flex h-12 w-full items-center justify-center gap-3 rounded-xl text-[13px] font-medium text-white transition-colors hover:bg-white/[0.08] disabled:pointer-events-none disabled:opacity-40"
             disabled={isLoading}
             onClick={handleGoogleSignIn}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            whileHover={{ scale: 1.015 }}
+            whileTap={{ scale: 0.985 }}
           >
             {isLoading ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-                <span>Signing in...</span>
+                <div className="size-4 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                <span className="text-white/70">Signing in…</span>
               </>
             ) : (
               <>
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg className="size-[18px]" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                     fill="#4285F4"
@@ -118,24 +108,24 @@ export default function SignInForm() {
               </>
             )}
           </motion.button>
-
-          <p className="pt-2 text-center text-white/40 text-xs">
-            By continuing, you agree to our{" "}
-            <Link
-              className="underline transition-colors hover:text-white/60"
-              href="/terms"
-            >
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link
-              className="underline transition-colors hover:text-white/60"
-              href="/privacy"
-            >
-              Privacy Policy
-            </Link>
-          </p>
         </motion.div>
+
+        {/* Footer */}
+        <motion.p
+          animate={{ opacity: 1 }}
+          className="mt-6 text-center text-[11px] leading-relaxed text-white/25"
+          initial={{ opacity: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          By continuing you agree to our{" "}
+          <Link className="text-white/35 underline decoration-white/10 underline-offset-2 transition-colors hover:text-white/50" href="/terms">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link className="text-white/35 underline decoration-white/10 underline-offset-2 transition-colors hover:text-white/50" href="/privacy">
+            Privacy Policy
+          </Link>
+        </motion.p>
       </div>
     </div>
   );
