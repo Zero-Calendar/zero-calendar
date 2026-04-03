@@ -25,9 +25,10 @@ type AssistantStreamPhase = "idle" | "waiting" | "text";
 
 const streamdownAnimation = {
   animation: "fadeIn",
-  duration: 260,
+  duration: 520,
   easing: "ease-out",
   sep: "char",
+  stagger: 42,
 } as const;
 
 export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
