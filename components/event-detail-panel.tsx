@@ -199,7 +199,7 @@ export function EventDetailPanel({
   return (
     <motion.div
       animate={{ x: 0, opacity: 1 }}
-      className="flex h-full flex-col overflow-hidden"
+      className="flex h-full min-h-0 flex-col overflow-hidden"
       exit={{ x: 80, opacity: 0 }}
       initial={{ x: 80, opacity: 0 }}
       transition={spring}
@@ -224,8 +224,8 @@ export function EventDetailPanel({
       </div>
 
       <Form {...form}>
-        <form className="flex flex-1 flex-col" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4">
             <FormField
               control={form.control}
               name="title"

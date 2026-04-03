@@ -160,7 +160,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
   return (
     <motion.div
       animate={{ x: 0, opacity: 1 }}
-      className="flex h-full flex-col overflow-hidden"
+      className="flex h-full min-h-0 flex-col overflow-hidden"
       exit={{ x: 80, opacity: 0 }}
       initial={{ x: 80, opacity: 0 }}
       transition={spring}
@@ -180,7 +180,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
         <div className="space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -210,8 +210,17 @@ export function ModernCalendarView({
   }, [userProvider, isLoggedIn, refreshEvents]);
 
   useEffect(() => {
-    refreshEvents();
+    void refreshEvents().catch(() => {});
   }, [refreshEvents]);
+
+  useEffect(() => {
+    if (!isMobile || rightPanel === "none") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobile, rightPanel]);
 
   useEffect(() => {
     if (!userId) return;
@@ -680,9 +689,18 @@ export function ModernCalendarView({
           event={selectedEvent}
           mode={eventPanelMode}
           onClose={closePanel}
-          onEventCreated={() => { refreshEvents(); closePanel(); }}
-          onEventDeleted={() => { refreshEvents(); closePanel(); }}
-          onEventUpdated={() => { refreshEvents(); closePanel(); }}
+          onEventCreated={() => {
+            void refreshEvents().catch(() => {});
+            closePanel();
+          }}
+          onEventDeleted={() => {
+            void refreshEvents().catch(() => {});
+            closePanel();
+          }}
+          onEventUpdated={() => {
+            void refreshEvents().catch(() => {});
+            closePanel();
+          }}
           selectedDate={selectedDate}
           userId={userId}
         />
@@ -899,24 +917,24 @@ export function ModernCalendarView({
             /* Mobile: bottom sheet overlay */
             <React.Fragment key="mobile-panel">
               <motion.div
-                className="fixed inset-0 z-40 bg-black/50"
+                className="fixed inset-0 z-40 touch-none bg-black/50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={closePanel}
               />
               <motion.div
-                className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92vh] flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.08] bg-background"
+                className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] min-h-0 flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.08] bg-background"
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", stiffness: 400, damping: 38 }}
               >
                 {/* Drag handle */}
-                <div className="flex justify-center py-2">
+                <div className="flex shrink-0 justify-center py-2">
                   <div className="h-1 w-8 rounded-full bg-white/20" />
                 </div>
-                <div className="flex-1 overflow-hidden" style={{ height: "85vh" }}>
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   {panelContent}
                 </div>
               </motion.div>
@@ -931,7 +949,7 @@ export function ModernCalendarView({
               key="desktop-panel"
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
             >
-              <div className="h-full w-[360px]">
+              <div className="h-full min-h-0 w-[360px]">
                 {panelContent}
               </div>
             </motion.div>
@@ -942,6 +960,7 @@ export function ModernCalendarView({
       {/* ── Mobile FAB ── */}
       {isMobile && rightPanel === "none" && (
         <motion.button
+          type="button"
           className="fixed bottom-5 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-lg shadow-black/40 active:scale-95"
           onClick={() => openCreatePanel(new Date())}
           initial={{ scale: 0, opacity: 0 }}

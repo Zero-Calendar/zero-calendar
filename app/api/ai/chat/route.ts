@@ -1,4 +1,4 @@
-import { streamText, tool } from "ai";
+import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 import { calendarTools } from "@/lib/ai-tools";
 import { getCurrentAuthUser } from "@/lib/auth-server";
@@ -505,8 +505,11 @@ export async function POST(req: Request) {
       messages: history,
       tools,
       toolChoice: "auto",
-      maxSteps: 5,
-      maxTokens: 1600,
+      // AI SDK v6 defaults to stepCountIs(1), which ends after a single tool call
+      // with no follow-up text. Allow multiple steps so the model can call tools
+      // and then summarize results for the user.
+      stopWhen: stepCountIs(10),
+      maxOutputTokens: 1600,
       temperature: 0.2,
       experimental_context: {
         userId: user.id,
