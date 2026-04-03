@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { SendIcon, XIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -145,9 +145,6 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
         <div className="space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 ring-1 ring-blue-500/20">
-                <SparklesIcon className="h-5 w-5 text-blue-400/70" />
-              </div>
               <p className="text-sm font-medium text-white/60">Ask Zero anything</p>
               <p className="mt-1.5 max-w-[220px] text-[11px] leading-relaxed text-white/30">
                 Create events, check your schedule, find free time, or get insights.
