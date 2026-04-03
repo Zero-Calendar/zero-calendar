@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { SendIcon, XIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,10 +21,15 @@ interface AiPanelProps {
 
 const spring = { type: "spring", stiffness: 300, damping: 30 };
 
+/** pre_text: stream open but only tool calls / no assistant text yet — hide typing dots */
+type AssistantStreamPhase = "idle" | "pre_text" | "text";
+
 export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [assistantStreamPhase, setAssistantStreamPhase] =
+    useState<AssistantStreamPhase>("idle");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +53,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
     setInput("");
     setMessages(nextMessages);
     setIsStreaming(true);
+    setAssistantStreamPhase("idle");
 
     try {
       const response = await fetch("/api/ai/chat", {
@@ -70,6 +76,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
       }
 
       if (response.headers.get("content-type")?.includes("text/event-stream") && response.body) {
+        setAssistantStreamPhase("pre_text");
         setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
         const reader = response.body.getReader();
@@ -103,6 +110,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
 
               if (event.type === "text") {
                 accumulated += event.text;
+                setAssistantStreamPhase("text");
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1] = {
@@ -147,6 +155,7 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
       ]);
     } finally {
       setIsStreaming(false);
+      setAssistantStreamPhase("idle");
     }
   };
 
@@ -206,38 +215,59 @@ export function AiPanel({ userId, onClose, onEventMutated }: AiPanelProps) {
             </div>
           )}
 
-          {messages.map((msg, idx) => (
-            <div className={cn("flex gap-2.5", msg.role === "user" && "flex-row-reverse")} key={idx}>
-              <div
-                className={cn(
-                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
-                  msg.role === "user"
-                    ? "bg-blue-500/90 text-white"
-                    : "bg-white/[0.04] text-white/80"
-                )}
+          {messages.map((msg, idx) => {
+            const isLatest = idx === messages.length - 1;
+            return (
+              <motion.div
+                className={cn("flex gap-2.5", msg.role === "user" && "flex-row-reverse")}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={idx}
+                layout="position"
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               >
-                {msg.role === "assistant" ? (
-                  <Streamdown className="max-w-none text-[13px] [&_[data-streamdown='link']]:text-cyan-400">
-                    {msg.content}
-                  </Streamdown>
-                ) : (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-            <div className="flex gap-2.5">
-              <div className="rounded-2xl bg-white/[0.04] px-3.5 py-2.5">
-                <div className="flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/30" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/30 [animation-delay:0.15s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/30 [animation-delay:0.3s]" />
-                </div>
-              </div>
-            </div>
-          )}
+                <motion.div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
+                    msg.role === "user"
+                      ? "bg-blue-500/90 text-white"
+                      : "bg-white/[0.04] text-white/80"
+                  )}
+                  layout={isLatest && msg.role === "assistant"}
+                  transition={{ layout: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }}
+                >
+                  {msg.role === "assistant" ? (
+                    <motion.div
+                      animate={{ opacity: msg.content.length > 0 ? 1 : 0.45 }}
+                      className="will-change-[opacity]"
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                    >
+                      <Streamdown className="max-w-none text-[13px] [&_[data-streamdown='link']]:text-cyan-400">
+                        {msg.content}
+                      </Streamdown>
+                      <AnimatePresence>
+                        {isStreaming && assistantStreamPhase === "text" && isLatest && (
+                          <motion.div
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-2 flex gap-1"
+                            exit={{ opacity: 0, y: 2 }}
+                            initial={{ opacity: 0, y: 4 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                          >
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/35" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/35 [animation-delay:0.15s]" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/35 [animation-delay:0.3s]" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </motion.div>
+              </motion.div>
+            );
+          })}
 
           <div ref={messagesEndRef} />
         </div>
