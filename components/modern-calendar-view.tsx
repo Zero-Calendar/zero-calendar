@@ -510,7 +510,7 @@ export function ModernCalendarView({
     const months = eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) });
 
     return (
-      <div className="grid h-full grid-cols-2 gap-2 overflow-auto pb-4 md:grid-cols-3 md:gap-3">
+      <div className="grid h-full min-h-0 grid-cols-2 auto-rows-[minmax(0,1fr)] gap-2 md:grid-cols-3 md:gap-3">
         {months.map((monthDate) => {
           const firstDay = startOfMonth(monthDate);
           const calendarStart = subDays(firstDay, firstDay.getDay());
@@ -518,15 +518,20 @@ export function ModernCalendarView({
           const monthEvents = events.filter((e) => e.start && new Date(e.start).getMonth() === monthDate.getMonth());
 
           return (
-            <div className="liquid-glass-subtle overflow-hidden rounded-xl" key={monthDate.toISOString()}>
-              <div className="border-b border-white/[0.06] px-2.5 py-1.5 md:px-3 md:py-2">
+            <div
+              className="liquid-glass-subtle flex h-full min-h-0 flex-col overflow-hidden rounded-xl"
+              key={monthDate.toISOString()}
+            >
+              <div className="shrink-0 border-b border-white/[0.06] px-2.5 py-1.5 md:px-3 md:py-2">
                 <div className="text-[11px] font-semibold md:text-xs">{format(monthDate, "MMMM")}</div>
               </div>
-              <div className="p-1.5 md:p-2">
-                <div className="mb-1 grid grid-cols-7 gap-0.5">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                    <div className="text-center text-[8px] font-medium text-white/25 md:text-[9px]" key={i}>{d}</div>
-                  ))}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 pb-1.5 pt-1 md:px-2 md:pb-2 md:pt-1.5">
+                <div className="sticky top-0 z-[1] -mx-0.5 mb-1 bg-background/92 px-0.5 pb-1 pt-0.5 shadow-[0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+                  <div className="grid grid-cols-7 gap-0.5">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                      <div className="text-center text-[8px] font-medium text-white/25 md:text-[9px]" key={i}>{d}</div>
+                    ))}
+                  </div>
                 </div>
                 <div className="grid grid-cols-7 gap-0.5">
                   {days.map((day) => {
@@ -905,7 +910,7 @@ export function ModernCalendarView({
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-hidden p-2 md:p-3">
+        <div className="min-h-0 flex-1 overflow-hidden p-2 md:p-3">
           {renderCalendarView()}
         </div>
       </div>
