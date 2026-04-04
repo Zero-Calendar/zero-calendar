@@ -450,7 +450,14 @@ export function EventDetailPanel({
                     <div className={glassRow}>
                       <CalendarIcon className="size-4 shrink-0 text-white/30" />
                       <DatePicker
-                        onChange={field.onChange}
+                        onChange={(nextStartDate) => {
+                          field.onChange(nextStartDate);
+                          form.setValue("endDate", nextStartDate, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          });
+                        }}
                         placeholder="Start date"
                         triggerClassName="h-full min-h-0 flex-1 rounded-none border-0 bg-transparent px-0 text-xs shadow-none hover:bg-transparent focus-visible:ring-0"
                         value={field.value}
