@@ -1,5 +1,9 @@
-import { api, getConvexClient } from "@/lib/convex";
+import { api, getConvexClient, getServerAccessKey } from "@/lib/convex";
 import type { CalendarCategory, CalendarEvent } from "@/types/calendar";
+
+const usersApi = api.users as any;
+const eventsApi = api.events as any;
+const categoriesApi = api.categories as any;
 
 interface UserRecord {
   accessToken?: string;
@@ -38,6 +42,13 @@ function stripUndefined<T extends Record<string, unknown>>(value: T) {
   );
 }
 
+function withServerAccess<T extends Record<string, unknown>>(value: T) {
+  return {
+    ...value,
+    serverAccessKey: getServerAccessKey(),
+  };
+}
+
 function withUserId(
   category: CalendarCategory,
   userId: string
@@ -52,7 +63,7 @@ export async function getUserRecord(
   userId: string
 ): Promise<UserRecord | null> {
   const client = getConvexClient();
-  const user = await client.query(api.users.getByUserId, { userId });
+  const user = await client.query(usersApi.getByUserId, withServerAccess({ userId }));
 
   if (!user) {
     return null;
@@ -81,19 +92,21 @@ export async function getUserRecord(
 
 export async function upsertUserRecord(user: UserRecord) {
   const client = getConvexClient();
-  await client.mutation(api.users.upsert, stripUndefined(user));
+  await client.mutation(usersApi.upsert, withServerAccess(stripUndefined(user)));
 }
 
 export async function getUserPreferences(userId: string) {
   return (await getUserRecord(userId))?.preferences ?? {};
 }
 
-export async function getUserRecordByGoogleWatchChannelId(
-  googleWatchChannelId: string
+export async function getGoogleWatchRecord(
+  googleWatchChannelId: string,
+  googleWatchToken?: string | null
 ): Promise<UserRecord | null> {
   const client = getConvexClient();
-  const user = await client.query(api.users.getByGoogleWatchChannelId, {
+  const user = await client.query(usersApi.getByGoogleWatchChannelId, {
     googleWatchChannelId,
+    googleWatchToken: googleWatchToken ?? undefined,
   });
 
   if (!user) {
@@ -102,22 +115,10 @@ export async function getUserRecordByGoogleWatchChannelId(
 
   return {
     userId: user.userId,
-    email: user.email,
-    name: user.name,
-    image: user.image,
-    provider: user.provider,
     accessToken: user.accessToken,
     refreshToken: user.refreshToken,
     expiresAt: user.expiresAt,
-    preferences:
-      (user.preferences as Record<string, unknown> | undefined) ?? {},
-    lastGoogleSync: user.lastGoogleSync,
-    googleSyncToken: user.googleSyncToken,
     googleWatchCalendarId: user.googleWatchCalendarId,
-    googleWatchChannelId: user.googleWatchChannelId,
-    googleWatchExpiration: user.googleWatchExpiration,
-    googleWatchResourceId: user.googleWatchResourceId,
-    googleWatchToken: user.googleWatchToken,
   };
 }
 
@@ -140,7 +141,7 @@ export async function getUserTimezone(userId: string) {
 
 export async function listUserEvents(userId: string): Promise<CalendarEvent[]> {
   const client = getConvexClient();
-  const events = await client.query(api.events.listByUser, { userId });
+  const events = await client.query(eventsApi.listByUser, withServerAccess({ userId }));
 
   return events
     .map((entry) => entry.data as CalendarEvent)
@@ -155,35 +156,44 @@ export async function getUserEvent(
   eventId: string
 ): Promise<CalendarEvent | null> {
   const client = getConvexClient();
-  const event = await client.query(api.events.getByEventId, {
-    userId,
-    eventId,
-  });
+  const event = await client.query(
+    eventsApi.getByEventId,
+    withServerAccess({ userId, eventId })
+  );
   return event ? (event.data as CalendarEvent) : null;
 }
 
 export async function upsertUserEvent(event: CalendarEvent) {
   const client = getConvexClient();
-  await client.mutation(api.events.upsert, {
-    userId: event.userId,
-    eventId: event.id,
-    startMs: new Date(event.start).getTime(),
-    endMs: new Date(event.end).getTime(),
-    source: event.source,
-    data: event,
-  });
+  await client.mutation(
+    eventsApi.upsert,
+    withServerAccess({
+      userId: event.userId,
+      eventId: event.id,
+      startMs: new Date(event.start).getTime(),
+      endMs: new Date(event.end).getTime(),
+      source: event.source,
+      data: event,
+    })
+  );
 }
 
 export async function deleteUserEvent(userId: string, eventId: string) {
   const client = getConvexClient();
-  await client.mutation(api.events.deleteByEventId, { userId, eventId });
+  await client.mutation(
+    eventsApi.deleteByEventId,
+    withServerAccess({ userId, eventId })
+  );
 }
 
 export async function listUserCategories(
   userId: string
 ): Promise<CalendarCategory[]> {
   const client = getConvexClient();
-  const categories = await client.query(api.categories.listByUser, { userId });
+  const categories = await client.query(
+    categoriesApi.listByUser,
+    withServerAccess({ userId })
+  );
 
   if (categories.length === 0) {
     return defaultCategories.map((category) => withUserId(category, userId));
@@ -196,11 +206,14 @@ export async function listUserCategories(
 
 export async function upsertUserCategory(category: CalendarCategory) {
   const client = getConvexClient();
-  await client.mutation(api.categories.upsert, {
-    userId: category.userId,
-    categoryId: category.id,
-    data: category,
-  });
+  await client.mutation(
+    categoriesApi.upsert,
+    withServerAccess({
+      userId: category.userId,
+      categoryId: category.id,
+      data: category,
+    })
+  );
 }
 
 export async function ensureDefaultCategories(userId: string) {

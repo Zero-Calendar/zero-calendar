@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncGoogleCalendarEventsIncrementally } from "@/lib/google-calendar";
-import { getUserRecordByGoogleWatchChannelId } from "@/lib/store";
+import { getGoogleWatchRecord } from "@/lib/store";
 
 export async function POST(request: Request) {
   const channelId = request.headers.get("x-goog-channel-id");
@@ -12,13 +12,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = await getUserRecordByGoogleWatchChannelId(channelId);
+    const user = await getGoogleWatchRecord(channelId, channelToken);
 
     if (!user) {
-      return new NextResponse(null, { status: 200 });
-    }
-
-    if (user.googleWatchToken && user.googleWatchToken !== channelToken) {
       return new NextResponse(null, { status: 200 });
     }
 

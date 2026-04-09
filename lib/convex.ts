@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
@@ -12,14 +14,17 @@ function getConvexUrl() {
 }
 
 export function getConvexClient() {
-  const client = new ConvexHttpClient(getConvexUrl());
-  const adminKey = process.env.CONVEX_DEPLOY_KEY;
+  return new ConvexHttpClient(getConvexUrl());
+}
 
-  if (adminKey) {
-    client.setAdminAuth(adminKey);
+export function getServerAccessKey() {
+  const key = process.env.BETTER_AUTH_SECRET;
+
+  if (!key) {
+    throw new Error("BETTER_AUTH_SECRET is not configured");
   }
 
-  return client;
+  return key;
 }
 
 export { api };

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { assertServerAccess } from "./access";
 
 export const getByToken = query({
   args: { token: v.string() },
@@ -12,24 +13,47 @@ export const getByToken = query({
 });
 
 export const listByEvent = query({
-  args: { eventId: v.string() },
-  handler: async (ctx, { eventId }) => {
-    return await ctx.db
+  args: {
+    eventId: v.string(),
+    organizerUserId: v.string(),
+    serverAccessKey: v.string(),
+  },
+  handler: async (ctx, { eventId, organizerUserId, serverAccessKey }) => {
+    assertServerAccess(serverAccessKey);
+
+    const invitations = await ctx.db
       .query("invitations")
       .withIndex("by_event", (q) => q.eq("eventId", eventId))
       .collect();
+
+    return invitations.filter(
+      (invitation) => invitation.organizerUserId === organizerUserId
+    );
   },
 });
 
 export const getByEventAndInvitee = query({
-  args: { eventId: v.string(), inviteeEmail: v.string() },
-  handler: async (ctx, { eventId, inviteeEmail }) => {
-    return await ctx.db
+  args: {
+    eventId: v.string(),
+    inviteeEmail: v.string(),
+    organizerUserId: v.string(),
+    serverAccessKey: v.string(),
+  },
+  handler: async (ctx, { eventId, inviteeEmail, organizerUserId, serverAccessKey }) => {
+    assertServerAccess(serverAccessKey);
+
+    const invitation = await ctx.db
       .query("invitations")
       .withIndex("by_event_invitee", (q) =>
         q.eq("eventId", eventId).eq("inviteeEmail", inviteeEmail)
       )
       .unique();
+
+    if (invitation?.organizerUserId !== organizerUserId) {
+      return null;
+    }
+
+    return invitation;
   },
 });
 
@@ -48,9 +72,13 @@ export const create = mutation({
     eventCalendarId: v.optional(v.string()),
     status: v.string(),
     createdAt: v.number(),
+    serverAccessKey: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("invitations", args);
+    assertServerAccess(args.serverAccessKey);
+    const { serverAccessKey: _serverAccessKey, ...invitationRecord } = args;
+
+    return await ctx.db.insert("invitations", invitationRecord);
   },
 });
 

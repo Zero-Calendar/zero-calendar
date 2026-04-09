@@ -2,8 +2,10 @@ import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { api } from "@/convex/_generated/api";
 import { getCurrentAuthUser } from "@/lib/auth-server";
-import { getConvexClient } from "@/lib/convex";
+import { getConvexClient, getServerAccessKey } from "@/lib/convex";
 import { sendInviteEmail } from "@/lib/resend";
+
+const invitationsApi = api.invitations as any;
 
 function getSiteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -43,13 +45,19 @@ export async function POST(request: Request) {
     }
 
     const client = getConvexClient();
+    const serverAccessKey = getServerAccessKey();
     const siteUrl = getSiteUrl();
     const results: { email: string; status: string; token?: string }[] = [];
 
     for (const email of invitees) {
       const existing = await client.query(
-        api.invitations.getByEventAndInvitee,
-        { eventId, inviteeEmail: email }
+        invitationsApi.getByEventAndInvitee,
+        {
+          eventId,
+          inviteeEmail: email,
+          organizerUserId: user.id,
+          serverAccessKey,
+        }
       );
 
       if (existing) {
@@ -59,7 +67,7 @@ export async function POST(request: Request) {
 
       const token = nanoid(32);
 
-      await client.mutation(api.invitations.create, {
+      await client.mutation(invitationsApi.create, {
         token,
         eventId,
         organizerUserId: user.id,
@@ -73,6 +81,7 @@ export async function POST(request: Request) {
         eventCalendarId,
         status: "pending",
         createdAt: Date.now(),
+        serverAccessKey,
       });
 
       try {

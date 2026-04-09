@@ -1,9 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { assertServerAccess } from "./access";
 
 export const listByUser = query({
-  args: { userId: v.string() },
-  handler: async (ctx, { userId }) => {
+  args: { userId: v.string(), serverAccessKey: v.string() },
+  handler: async (ctx, { userId, serverAccessKey }) => {
+    assertServerAccess(serverAccessKey);
+
     return await ctx.db
       .query("categories")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -12,8 +15,14 @@ export const listByUser = query({
 });
 
 export const getByCategoryId = query({
-  args: { userId: v.string(), categoryId: v.string() },
-  handler: async (ctx, { userId, categoryId }) => {
+  args: {
+    userId: v.string(),
+    categoryId: v.string(),
+    serverAccessKey: v.string(),
+  },
+  handler: async (ctx, { userId, categoryId, serverAccessKey }) => {
+    assertServerAccess(serverAccessKey);
+
     return await ctx.db
       .query("categories")
       .withIndex("by_user_categoryId", (q) =>
@@ -28,20 +37,24 @@ export const upsert = mutation({
     userId: v.string(),
     categoryId: v.string(),
     data: v.any(),
+    serverAccessKey: v.string(),
   },
   handler: async (ctx, args) => {
+    assertServerAccess(args.serverAccessKey);
+    const { serverAccessKey: _serverAccessKey, ...categoryRecord } = args;
+
     const existing = await ctx.db
       .query("categories")
       .withIndex("by_user_categoryId", (q) =>
-        q.eq("userId", args.userId).eq("categoryId", args.categoryId)
+        q.eq("userId", categoryRecord.userId).eq("categoryId", categoryRecord.categoryId)
       )
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, args);
+      await ctx.db.patch(existing._id, categoryRecord);
       return existing._id;
     }
 
-    return await ctx.db.insert("categories", args);
+    return await ctx.db.insert("categories", categoryRecord);
   },
 });

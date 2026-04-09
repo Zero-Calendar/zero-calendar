@@ -75,7 +75,7 @@ Open http://localhost:3000.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `BETTER_AUTH_SECRET` | Yes | Secret used by Better Auth. Set a strong random value in every non-local deployment. |
+| `BETTER_AUTH_SECRET` | Yes | Shared secret used by Better Auth and server-side Convex access control. Set the same strong random value in both your Next.js and Convex environments. |
 | `SITE_URL` | Yes | Canonical server-side site URL used by auth flows. |
 | `NEXT_PUBLIC_SITE_URL` | Yes | Public site URL used by the client and invitation links. |
 | `NEXT_PUBLIC_CONVEX_URL` | Yes | Public Convex deployment URL for the frontend client. |
@@ -88,7 +88,6 @@ Open http://localhost:3000.
 | `OPENROUTER_MODEL` | Optional | Override the default OpenRouter model. |
 | `RESEND_API_KEY` | Yes | API key used to send invitation emails. |
 | `RESEND_FROM_EMAIL` | Optional | Sender identity for invitation emails. |
-| `CONVEX_DEPLOY_KEY` | Optional | Enables privileged server-side Convex access where required. Treat this like an admin credential. |
 
 ## Deploying to Vercel
 
