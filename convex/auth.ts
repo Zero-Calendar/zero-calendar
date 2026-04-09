@@ -8,9 +8,7 @@ import authConfig from "./auth.config";
 
 const siteUrl = process.env.SITE_URL || "http://localhost:3000";
 const secret =
-  process.env.BETTER_AUTH_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "development-secret-change-me";
+  process.env.BETTER_AUTH_SECRET || "development-secret-change-me";
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 

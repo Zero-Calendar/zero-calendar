@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Geist } from "next/font/google";
 import type React from "react";
 import { Suspense } from "react";
-import { NextAuthProvider } from "@/components/session-provider";
+import { AuthProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "streamdown/styles.css";
@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
       <body className={`${geist.variable} font-sans antialiased`}>
         <Suspense fallback={null}>
-          <NextAuthProvider>
+          <AuthProvider>
             <ThemeProvider
               attribute="class"
               defaultTheme="dark"
@@ -37,7 +37,7 @@ export default function RootLayout({
               {children}
               <Toaster />
             </ThemeProvider>
-          </NextAuthProvider>
+          </AuthProvider>
         </Suspense>
         <Analytics />
       </body>
