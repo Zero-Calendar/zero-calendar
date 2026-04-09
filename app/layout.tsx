@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
+import { Geist } from "next/font/google";
 import type React from "react";
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/session-provider";
@@ -16,7 +16,6 @@ export const metadata: Metadata = {
   title: "Zero Calendar | AI-Powered Scheduling",
   description:
     "Transform your time management with AI. Zero Calendar learns your patterns, optimizes your schedule, and gives you back what matters most.",
-  generator: "v0.app",
 };
 
 export default function RootLayout({
