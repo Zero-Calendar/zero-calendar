@@ -98,7 +98,7 @@ The deploy button above clones this repository into a new Vercel project. Before
 3. Configure Google OAuth for your deployed domain and Better Auth routes.
 4. Set a real `BETTER_AUTH_SECRET` for production.
 5. Configure Resend if you want invitation emails enabled.
-   
+    
 
 ## License
 
